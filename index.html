@@ -6,7 +6,6 @@
 
 <body>
 
-
     <h1>SOB (Sprite OBject) File format</h1>
     <hr>
     <p>
@@ -21,6 +20,10 @@
     <p>
         Note: What's described here was mostly figured out from the game's code and toying around in dolphin, it might
         be incomplete. Things like frame timings are hardcoded into the game.
+    </p>
+
+    <p>
+        <a href="https://github.com/nbouteme/fsasobdoc">Source code</a> for this page if you need some reference implementation from the renderer at the bottom of this page.
     </p>
 
     <p>
@@ -88,22 +91,38 @@
         <li>
 
             Byte 5:
-            MSB nibble: palette selector. Nothing much to say, 4 bits, 16 different values, one for each palette in a
-            given
-            SCL
-            file.
-            LSB nibble: page selector. This implies there can only be 16 different "pages" (slices of 256x64 pixels
-            character
-            data) mapped at once.
+            <ul>
+                <li>
+                    MSB nibble: palette selector. Nothing much to say, 4 bits, 16 different values, one for each palette
+                    in a given SCL file.
+                </li>
+                <li>
+                    LSB nibble: page selector. This implies there can only be 16 different "pages" (slices of 256x64
+                    pixels
+                    character
+                    data) mapped at once.
+                </li>
+            </ul>
+
             From what I've seen, the game only has these 16 pages mapped, coming from 5 different SCH files.
-            0, 1, 2, 3: gb_ch_obj_base_sch. It's 256x256, so it occupies 4 pages. Used for items, link's arms, certain
-            NPCs
-            and
-            long lived objects.
-            4, 5, 6, 7: ennemy_sch. Certain ennemy sprites.
-            8, 9: gals2_sch. Certain NPC sprites
-            a, b: player_sch. Link's body.
-            c, d, e, f: gals_sch. Other NPC sprites.
+            <ul>
+                <li>
+                    0, 1, 2, 3: gb_ch_obj_base_sch. It's 256x256, so it occupies 4 pages. Used for items, link's arms,
+                    certain NPCs and long lived objects.
+                </li>
+                <li>
+                    4, 5, 6, 7: ennemy_sch. Certain ennemy sprites.
+                </li>
+                <li>
+                    8, 9: gals2_sch. Certain NPC sprites
+                </li>
+                <li>
+                    a, b: player_sch. Link's body.
+                </li>
+                <li>
+                    c, d, e, f: gals_sch. Other NPC sprites.
+                </li>
+            </ul>
         </li>
     </ul>
 
@@ -206,7 +225,9 @@
         <input id="skip" value="0" type="number" min="0" max="16" step="1">
         <input id="clear" checked="true" type="checkbox">
     -->
-    <p>Note: the character data rendered here is only the last used character data, some other might be used mid-render</p>
-    <p>Note 2: Link being a special actor, the renderer here might use the wrong palette for certain things compared to the game</p>
+    <p>Note: the character data rendered here is only the last used character data, some other might be used mid-render
+    </p>
+    <p>Note 2: Link being a special actor, the renderer here might use the wrong palette for certain things compared to
+        the game</p>
     <script src="./dist/script.js"></script>
 </body>
