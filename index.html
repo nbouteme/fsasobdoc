@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+
+<head>
+
+</head>
+
+<body>
+
+
+    <h1>SOB (Sprite OBject) File format</h1>
+    <hr>
+    <p>
+        Refreshers:
+    </p>
+    <ul>
+        <li>SCH contains sprite characters, in a map 256 pixels wide.</li>
+        <li>SCL contains 16 palettes, where each palette contains 16 colors entry is in RGB555 format (2 bytes), the
+            entry at index 0 can be assumed to represent a transparent pixel</li>
+    </ul>
+
+    <p>
+        Note: What's described here was mostly figured out from the game's code and toying around in dolphin, it might
+        be incomplete. Things like frame timings are hardcoded into the game.
+    </p>
+
+    <p>
+        The SOB file format is used to describe how to layout character data (from .sch -> Sprite CHaracter) to render a
+        sprite.
+        .SCH files don't contain sprites strictly speaking, but chunks of sprites.
+    </p>
+
+    <p>
+        Multi-bytes values are in little endian (contrary to the Gamecube being a big endian system).
+    </p>
+
+    <p>
+        The header is just a short word of two bytes, indicating how many sprites are described in a given .sob file.
+        Let's say there are N sprites. Then the header is followed by N pairs of short integers, that are offset
+        relative to the beginning of the file.
+        These offsets are the beginning and end of attribute data for a single sprite. Each attribute is made of 6
+        bytes, so the difference between the beginning and end offset is always a multiple of 6. The game renders them
+        starting from the last.
+    </p>
+
+    <p>
+        This file format does not describe which palette it uses, and which pages (continue reading to know what I'm
+        referring to as a page) are mapped to which number, it is assumed to be the responsibility of the game engine.
+    </p>
+
+    <p>
+        Here's a description of what each of the 6 bytes does:
+    </p>
+
+    <ul>
+        <li>
+            Byte 0: height, as a signed 8 bit value. This isn't strictly speaking just a y-offset, as its value is
+            considered
+            when drawing things like sprite shadows.
+        </li>
+        <li>
+            Byte 1: The first 2 MSBs describe a Block Shape (see the block section), the other 6 bits are unused, I've
+            only
+            seen
+            them set to 0. The game's renderer shuffles them around but never reads them.
+            int block_shape = (attr[1] >> 6) & 3;
+        </li>
+        <li>
+            Byte 2: x-offset, as a signed 8 bit value.
+        </li>
+
+        <li>
+            Byte 3: Object attributes: Only the high-nibble of that byte is used. The 2 MSBs control the Block Size (see
+            the
+            block section), the following two bits control flipping along the y and x axis respectively (going from msb
+            to
+            lsb)
+            int block_size = (attr[1] >> 6) & 3;
+            bool flip_y ((attr[3] >> 5) & 1) != 0;
+            bool flip_x ((attr[3] >> 4) & 1) != 0;
+
+        </li>
+        <li>
+            Byte 4: PageOffset, an unsigned byte that represents a character's origin position in multiple of 8 pixels.
+            When
+            reaching the end of a row, an increment goes at the beginning of row below.
+            This means this byte can only display what's within a 256x64 pixels "page"
+        </li>
+        <li>
+
+            Byte 5:
+            MSB nibble: palette selector. Nothing much to say, 4 bits, 16 different values, one for each palette in a
+            given
+            SCL
+            file.
+            LSB nibble: page selector. This implies there can only be 16 different "pages" (slices of 256x64 pixels
+            character
+            data) mapped at once.
+            From what I've seen, the game only has these 16 pages mapped, coming from 5 different SCH files.
+            0, 1, 2, 3: gb_ch_obj_base_sch. It's 256x256, so it occupies 4 pages. Used for items, link's arms, certain
+            NPCs
+            and
+            long lived objects.
+            4, 5, 6, 7: ennemy_sch. Certain ennemy sprites.
+            8, 9: gals2_sch. Certain NPC sprites
+            a, b: player_sch. Link's body.
+            c, d, e, f: gals_sch. Other NPC sprites.
+        </li>
+    </ul>
+
+    <h2>Blocks</h2>
+    <hr />
+
+    <p>
+        Attribute data defines where to start pulling character data, and uses 4 bits to determine the dimensions in
+        pixels
+        to pull.
+    </p>
+
+    The Block Shape and Block Size, 2 bits each;
+    They describe regions of 8x8 blocks.
+
+    <p>
+        There are three types of block shapes: Square (BlockShape = 0), Wide (BlockShape = 1), Tall (BlockShape = 2).
+        Using
+        a BlockShape = 3 makes the game read out of bounds and interpret incorrectly bytes describing the sizes.
+        There are 4 different sizes for each type of Shape.
+    </p>
+
+    For the Square Shape:
+    <pre>
+    0: 1x1 blocks
+    1: 2x2 blocks
+    2: 4x4 blocks
+    3: 8x8 blocks
+    </pre>
+
+    Wide shapes:
+    <pre>
+    0: 2x1 blocks
+    1: 4x1 blocks
+    2: 4x2 blocks
+    3: 8x4 blocks
+    </pre>
+
+    Tall shapes:
+    <pre>
+    0: 1x2 blocks
+    1: 1x4 blocks
+    2: 2x4 blocks
+    3: 4x8 blocks
+</pre>
+
+
+    <h2>
+        Rendering
+    </h2>
+    <hr>
+    <p>
+        Rendering a given sprite ID at coordinates [x;y] consists of the following steps:
+    </p>
+
+    <ul>
+
+        <li>
+            Get the sprite attribute list
+        </li>
+        <li>
+            Starting from the last attribute, the going to the first:
+        </li>
+        <li>
+            Determine the shape in pixels (get the block size, multiply by 8)
+        </li>
+        <li>
+            Determine the origin point in the CHaracter data page ((PageOffset & 0x1f) << 3 for the x coordinate,
+                (PageOffset>> 5) << 3 for the y coordinate) </li>
+        <li>
+            Ensure you have the CHaracter data somewhere ready to be used, with the
+            proper palette
+        </li>
+        <li>
+            Extract the proper region
+        </li>
+        <li>
+            Draw the extracted region at [x;y] with the following
+            considerations:
+        </li>
+        <li>
+            <ul>
+                <li>
+                    add the x/y_offset to the coordinate
+                </li>
+                <li>
+                    if that coordinate is flipped, you have to negate the corresponding offset AND add a bias to the
+                    final coordinate that is equal to the extracted region dimension
+                </li>
+            </ul>
+        </li>
+    </ul>
+    <label>Palette to use (12-15: green-purple link)</label>
+    <input id="palette" value="12" type="number" min="0" max="15" step="1">
+    <br>
+    <label>Sprite to render (tip: click the box and use arrow keys to change sprite)</label>
+    <input id="sprite" value="16" type="number" min="0" max="980" step="1">
+    <!--
+        <input id="draw" value="16" type="number" min="0" max="16" step="1">
+        <input id="skip" value="0" type="number" min="0" max="16" step="1">
+        <input id="clear" checked="true" type="checkbox">
+    -->
+    <p>Note: the character data rendered here is only the last used character data, some other might be used mid-render</p>
+    <p>Note 2: Link being a special actor, the renderer here might use the wrong palette for certain things compared to the game</p>
+    <script src="./dist/script.js"></script>
+</body>
