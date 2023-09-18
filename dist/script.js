@@ -657,7 +657,7 @@ void main() {
       sy += yoff * 64;
       const islink = sc == player_sch_default || c.page == 0 && c.block_offset < 64;
       if (currentlyRendererd != sc || pl != islink) {
-        renderSpriteSheet(sc, objscl_default, c.palette);
+        renderSpriteSheet(sc, objscl_default, +inp.value || c.palette);
         currentlyRendererd = sc;
         pl = islink;
       }
@@ -675,7 +675,7 @@ void main() {
     renderSpriteSheet(player_sch_default, objscl_default, 12);
     const inp2 = document.getElementById("palette");
     const inp22 = document.getElementById("sprite");
-    inp2.onchange = () => {
+    inp2.onchange = (ev) => {
       renderSpriteSheet(player_sch_default, objscl_default, inp2.value === void 0 ? 12 : +inp2.value);
       currentlyRendererd = player_sch_default;
       pl = true;

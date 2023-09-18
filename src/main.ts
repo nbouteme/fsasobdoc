@@ -261,7 +261,7 @@ const drawSprite = (sprites: Sprite[], idx: number) => {
         // this is just a hack for a correct palette, you shouldn't have this in your renderers
         const islink = sc == playersch || (c.page == 0 && c.block_offset < 0x40);
         if (currentlyRendererd != sc || pl != islink) {
-            renderSpriteSheet(sc, scl, c.palette);
+            renderSpriteSheet(sc, scl, +inp.value || c.palette);
             currentlyRendererd = sc;
             pl = islink;
         }
@@ -280,7 +280,7 @@ addEventListener('load', () => {
     renderSpriteSheet(playersch, scl, 12);
     const inp = document.getElementById("palette") as HTMLInputElement;
     const inp2 = document.getElementById("sprite") as HTMLInputElement;
-    inp!.onchange = () => {
+    inp!.onchange = (ev) => {
         renderSpriteSheet(playersch, scl, inp.value === undefined ? 12 : +inp.value);
         currentlyRendererd = playersch;
         pl = true;
