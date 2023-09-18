@@ -1,7 +1,18 @@
 <!DOCTYPE html>
 
 <head>
+    <style>
+        canvas {
+            border: 1px solid black;
+            background-image: url(./bg.png);
+            background-attachment: fixed;
+        }
 
+        .loaders {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+    </style>
 </head>
 
 <body>
@@ -23,7 +34,8 @@
     </p>
 
     <p>
-        <a href="https://github.com/nbouteme/fsasobdoc">Source code</a> for this page if you need some reference implementation from the renderer at the bottom of this page.
+        <a href="https://github.com/nbouteme/fsasobdoc">Source code</a> for this page if you need some reference
+        implementation from the renderer at the bottom of this page.
     </p>
 
     <p>
@@ -215,11 +227,13 @@
             </ul>
         </li>
     </ul>
+    <canvas id="spriteCanvas"></canvas>
+    <canvas id="spritesheetCanvas"></canvas><br>
     <label>Palette to use (12-15: green-purple link)</label>
     <input id="palette" value="12" type="number" min="0" max="15" step="1">
     <br>
     <label>Sprite to render (tip: click the box and use arrow keys to change sprite)</label>
-    <input id="sprite" value="16" type="number" min="0" max="980" step="1">
+    <input id="sprite" value="16" type="number" min="0" max="1348" step="1">
     <!--
         <input id="draw" value="16" type="number" min="0" max="16" step="1">
         <input id="skip" value="0" type="number" min="0" max="16" step="1">
@@ -229,5 +243,72 @@
     </p>
     <p>Note 2: Link being a special actor, the renderer here might use the wrong palette for certain things compared to
         the game</p>
+
+    <hr>
+    <h1>SPL File format</h1>
+    <hr>
+    <i>
+        Based on the only SPL file in the game I could find
+    </i>
+    <p>
+        SPL is a rather simplistic file format.
+        Is it a sequence of 4-short integers tile attributes.
+        Each of these integers describe where to pull a 8x8 block of tile data from the associated SCH and how to flip
+        it.
+        Combining these 4 shorts describes a 16x16 tile. The shorts describe the tile in top-down/left-right order.
+        Here's the layout of one 16-bit integer:
+    <ul>
+        <li>
+            The first 4 MSB describe the palette to use;
+        </li>
+        <li>
+            The next 2 describe if the tile is flipped, MSB is the y axis, the other is the X axis;
+        </li>
+        <li>
+            The next 5 bits describe the (8x8) block y-index in the CHaracter data
+        </li>
+        <li>
+            The last 5 bits describe the (8x8) block x-index in the CHaracter data
+        </li>
+    </ul>
+    </p>
+    <h3>MAP files</h3>
+    Map files are just a 2x2 block of 32x32 blocks of tile indices in short little-endian format.
+    <br>
+    <hr>
+    <h4>Renderer</h4>
+    <p> This renderer uses WebGL2, make sure you have a GPU that is from this millenia.</p>
+    <p> It handles map/character data/palette/layout data entirely within shaders</p>
+    <p> You can load your own files</p>
+    <label>
+        Framerate
+        <input type="number" min="0" max="60" step="1" value="12" id="fr" />
+    </label>
+    <label>
+        Anim A
+        <input type="number" min="-1" max="3" value="1" step="1" id="anima" />
+    </label>
+    <label>
+        Anim B
+        <input type="number" min="-1" max="1" value="0" step="1" id="animb" />
+    </label>
+    <br>
+    <i>Only 1 is implemented for A, feel free to contribute the proper animation data for the 3 others</i>
+    <p> You can load your own files, make sure they have been decompressed</p>
+    <div class="loaders">
+        <label>
+            Load map
+        </label>
+        <input type="file" id="mapfile" />
+        <label>
+            Load map character data set (sch)
+        </label>
+        <input type="file" id="schfile" />
+        <label>
+            Load palette (scl)
+        </label>
+        <input type="file" id="sclfile" />
+    </div>
+    <br>
     <script src="./dist/script.js"></script>
 </body>

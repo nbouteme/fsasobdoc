@@ -1,19 +1,26 @@
 import sob from "../player_sob.bin";
+//import sob from "../enemy_gc_sob.bin";
+//import sob from "../enemy_both_sob.bin";
+//import sob from "../enemy_both2_sob.bin";
+
 import playersch from "../player.sch.bin";
+import ennemysch from "../enemy_sch.bin";
+import gals from "../gals.sch.bin";
+import gals2 from "../gals2.sch.bin";
+
 import objsch from "../objbasesch.bin";
+
 import scl from "../objscl.bin";
 
-const canv = document.createElement('canvas');
+import "./spl"
+
+const canv = document.getElementById('spriteCanvas') as HTMLCanvasElement;
 canv.width = 128;
 canv.height = 128;
 
-const spriteSheet = document.createElement('canvas');
+const spriteSheet = document.getElementById('spritesheetCanvas') as HTMLCanvasElement;
 spriteSheet.width = 256;
 spriteSheet.height = 256;
-
-
-document.body.appendChild(canv);
-document.body.appendChild(spriteSheet);
 
 const fromArgb = (...[a, r, g, b]: number[]) => [a, r, g, b];
 
@@ -38,12 +45,12 @@ const getSpritesheetForPage = (p: number) => {
         [objsch, 2], // 2 
         [objsch, 4], // 3
 
-        [], [], [], [], // ennemies
-        [], [], // gals2
+        [ennemysch, 0], [ennemysch, 1], [ennemysch, 2], [ennemysch, 3], // ennemies
+        [gals2, 0], [gals2, 1], // gals2
 
         [playersch, 0],
         [playersch, 1],
-        [], [], [], [], // gals
+        [gals, 0], [gals, 1], [gals, 2], [gals, 3], // gals
     ][p] as [Uint8Array, number];
 };
 
@@ -212,13 +219,13 @@ const inp = document.getElementById("palette") as HTMLInputElement;
 //const clear = document.getElementById("clear") as HTMLInputElement;
 
 let currentlyRendererd: Uint8Array | null = null;
-let pl:  boolean | null = null;
+let pl: boolean | null = null;
 const drawSprite = (sprites: Sprite[], idx: number) => {
     const sprite = sprites[idx];
 
     const [x, y] = [48, 48];
     //if (clear.checked)
-     ctx.clearRect(0, 0, 128, 128);
+    ctx.clearRect(0, 0, 128, 128);
 
     //sprite.chars.sort((a, b) => b.y_offset - a.y_offset);
     //let n = +draw.value;
@@ -238,7 +245,7 @@ const drawSprite = (sprites: Sprite[], idx: number) => {
         let sy = (c.block_offset >> 5) << 3;
         let xf = 1;
         let xb = 0;
-        if (c.flip_x) { 
+        if (c.flip_x) {
             xf = -1;
             xb = -dx;
         }
@@ -254,7 +261,7 @@ const drawSprite = (sprites: Sprite[], idx: number) => {
         // this is just a hack for a correct palette, you shouldn't have this in your renderers
         const islink = sc == playersch || (c.page == 0 && c.block_offset < 0x40);
         if (currentlyRendererd != sc || pl != islink) {
-            renderSpriteSheet(sc, scl, c.palette && islink ? +inp.value : c.palette);
+            renderSpriteSheet(sc, scl, c.palette);
             currentlyRendererd = sc;
             pl = islink;
         }
@@ -269,22 +276,24 @@ const drawSprite = (sprites: Sprite[], idx: number) => {
     }
 };
 
-onload = () => {
+addEventListener('load', () => {
     renderSpriteSheet(playersch, scl, 12);
     const inp = document.getElementById("palette") as HTMLInputElement;
     const inp2 = document.getElementById("sprite") as HTMLInputElement;
     inp!.onchange = () => {
         renderSpriteSheet(playersch, scl, inp.value === undefined ? 12 : +inp.value);
+        currentlyRendererd = playersch;
+        pl = true;
     };
     const sprites = parseObjAttributes(sob);
-
+    inp2.max = '' + sprites.length;
+    console.log([...new Set(sprites.flatMap(e => e.chars.flatMap(e => e.page)))].map(e => e.toString(16)));
     //draw!.onchange =
     //    skip!.onchange =
-        inp2!.onchange = () => {
-            drawSprite(sprites, inp2.value === undefined ? 827 : +inp2.value);
-        };
+    inp2!.onchange = () => {
+        drawSprite(sprites, inp2.value === undefined ? 827 : +inp2.value);
+    };
 
     drawSprite(sprites, 16);
 
-};
-
+});
